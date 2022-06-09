@@ -38,10 +38,6 @@ HTBqbi5cep/lrI3SbtgzZ6qt+jk9tODMAjeFI916X3pwxRIFFKf5WjTJGTwRmKHf
 MB5itsp7HxnnO5y2Fz6yiRECAwEAAQ==
 -----END PUBLIC KEY-----`
 
-func log(num int, v any) {
-	fmt.Printf("[%d]%#v\n", num, v)
-}
-
 func send(conn net.Conn, data []byte, encrypt bool) error {
 	var err error
 	var sd []byte
@@ -66,18 +62,18 @@ func send(conn net.Conn, data []byte, encrypt bool) error {
 func getR1Struct() []byte {
 	rand.Seed(time.Now().UnixMicro())
 	r1 = uint32(rand.Intn(math.MaxUint16))
-	log(1, r1)
+	sending.Log(1, r1)
 	body := []sending.BodySlice{sending.NewBodySlice(r1)}
-	log(2, body)
+	sending.Log(2, body)
 	return sending.GetBuf(sending.HandShake, body)
 }
 
 func getRC4Struct() []byte {
 	p, g, s, selfPubKey = diffHellman.GenKeys()
-	log(10, p)
-	log(11, g)
-	log(12, s)
-	log(13, selfPubKey)
+	sending.Log(10, p)
+	sending.Log(11, g)
+	sending.Log(12, s)
+	sending.Log(13, selfPubKey)
 	pE, err := rsa.Encrypt(p.Bytes(), []byte(pk))
 	gE, err := rsa.Encrypt(g.Bytes(), []byte(pk))
 	kE, err := rsa.Encrypt(selfPubKey.Bytes(), []byte(pk))
@@ -87,7 +83,7 @@ func getRC4Struct() []byte {
 		sending.NewBodySlice(gE),
 		sending.NewBodySlice(kE),
 	}
-	log(14, body)
+	sending.Log(14, body)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -97,7 +93,7 @@ func getRC4Struct() []byte {
 // 1
 func sendHandshake(conn net.Conn) {
 	r1s := getR1Struct()
-	log(3, r1s)
+	sending.Log(3, r1s)
 	err := send(conn, r1s, true)
 	if err != nil {
 		panic(err.Error())
@@ -110,9 +106,9 @@ func receiveHandShake(conn net.Conn) {
 	var err error
 	reader := bufio.NewReader(conn)
 	data, err := sending.ParseBuf(reader, sending.ServerSide)
-	log(4, data)
+	sending.Log(4, data)
 	message, err := sending.ParseMessage(bytes.NewReader(data.EncData))
-	log(5, message)
+	sending.Log(5, message)
 	e := rsa.SignVer(data.Checksum[:], data.Sign, []byte(pk))
 	if e != nil {
 		panic("verify sign error")
@@ -120,13 +116,13 @@ func receiveHandShake(conn net.Conn) {
 
 	if message.Head.Type == sending.HandShake {
 		rsign := message.Body[0].Value
-		log(6, rsign)
+		sending.Log(6, rsign)
 		r2 := message.Body[1].Value
-		log(7, r2)
+		sending.Log(7, r2)
 		r12 := fmt.Sprintf("%v%v", r1, sending.ByteOrder.Uint32(r2))
-		log(8, r12)
+		sending.Log(8, r12)
 		r12hash := hash.Sum([]byte(r12))
-		log(9, r12hash)
+		sending.Log(9, r12hash)
 		e := rsa.SignVer(r12hash[:], rsign, []byte(pk))
 		if e != nil {
 			panic("verify r2 sign error")
@@ -152,18 +148,18 @@ func sendRC4(conn net.Conn) {
 func receiveRC4(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	data, _ := sending.ParseBuf(reader, sending.ServerSide)
-	log(15, data)
+	sending.Log(15, data)
 	message, _ := sending.ParseMessage(bytes.NewReader(data.EncData))
-	log(16, message)
+	sending.Log(16, message)
 	e := rsa.SignVer(data.Checksum[:], data.Sign, []byte(pk))
 	if e != nil {
 		panic("verify sign error")
 	}
 	if message.Head.Type == sending.RC4 {
 		thatPubKey = new(big.Int).SetBytes(message.Body[0].Value)
-		log(17, thatPubKey)
+		sending.Log(17, thatPubKey)
 		privkey = diffHellman.GenPrivKey(thatPubKey, p, s)
-		log(18, privkey)
+		sending.Log(18, privkey)
 		sendFile(conn)
 	}
 }

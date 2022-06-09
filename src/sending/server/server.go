@@ -89,10 +89,6 @@ var (
 	p, g, s, selfPubKey, thatPubKey, privkey *big.Int
 )
 
-func log(num int, v any) {
-	fmt.Printf("[%d]%#v\n", num, v)
-}
-
 func send(conn net.Conn, data []byte) error {
 	var err error
 	defer func(err error) {
@@ -121,29 +117,29 @@ func getR2Struct(r1 uint32) []byte {
 	}(err)
 	rand.Seed(time.Now().UnixMicro())
 	r2 := uint32(rand.Intn(math.MaxUint16))
-	log(5, r2)
+	sending.Log(5, r2)
 	r12 := fmt.Sprintf("%v%v", r1, r2)
-	log(6, r12)
+	sending.Log(6, r12)
 	r12H := hash.Sum([]byte(r12))
-	log(7, r12H)
+	sending.Log(7, r12H)
 	r12S, err := rsa.Sign(r12H[:], []byte(sk))
-	log(8, r12S)
+	sending.Log(8, r12S)
 	body := []sending.BodySlice{
 		sending.NewBodySlice(r12S),
 		sending.NewBodySlice(r2),
 	}
-	log(9, body)
+	sending.Log(9, body)
 	return sending.GetBuf(sending.HandShake, body)
 }
 
 func getRC4Struct() []byte {
 	s, selfPubKey = diffHellman.GenPubKeyUseNumbers(p, g)
-	log(15, s)
-	log(16, selfPubKey)
+	sending.Log(15, s)
+	sending.Log(16, selfPubKey)
 	privkey = diffHellman.GenPrivKey(thatPubKey, p, s)
-	log(17, privkey)
+	sending.Log(17, privkey)
 	body := []sending.BodySlice{sending.NewBodySlice(selfPubKey.Bytes())}
-	log(18, body)
+	sending.Log(18, body)
 	return sending.GetBuf(sending.RC4, body)
 }
 
@@ -152,15 +148,15 @@ func receiveHandShake(conn net.Conn) {
 	var err error
 	reader := bufio.NewReader(conn)
 	encData, err := sending.ParseBuf(reader, sending.ClientSide)
-	log(1, encData.String())
+	sending.Log(1, encData.String())
 	decData, err := rsa.Decrypt(encData.EncData, []byte(sk))
-	log(2, decData)
+	sending.Log(2, decData)
 	message, err := sending.ParseMessage(bytes.NewReader(decData))
-	log(3, message)
+	sending.Log(3, message)
 	if message.Head.Type == sending.HandShake {
 		r1b := message.Body[0].Value
 		r1 := sending.ByteOrder.Uint32(r1b)
-		log(4, r1)
+		sending.Log(4, r1)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -183,19 +179,19 @@ func receiveRC4(conn net.Conn) {
 	var err error
 	reader := bufio.NewReader(conn)
 	encData, err := sending.ParseBuf(reader, sending.ClientSide)
-	log(10, encData)
+	sending.Log(10, encData)
 	message, err := sending.ParseMessage(bytes.NewReader(encData.EncData))
-	log(11, message)
+	sending.Log(11, message)
 	if message.Head.Type == sending.RC4 {
 		pD, _ := rsa.Decrypt(message.Body[0].Value, []byte(sk))
 		gD, _ := rsa.Decrypt(message.Body[1].Value, []byte(sk))
 		kD, _ := rsa.Decrypt(message.Body[2].Value, []byte(sk))
 		p = new(big.Int).SetBytes(pD)
-		log(12, p)
+		sending.Log(12, p)
 		g = new(big.Int).SetBytes(gD)
-		log(13, g)
+		sending.Log(13, g)
 		thatPubKey = new(big.Int).SetBytes(kD)
-		log(14, thatPubKey)
+		sending.Log(14, thatPubKey)
 		if err != nil {
 			panic(err.Error())
 		}

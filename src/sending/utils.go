@@ -1,11 +1,18 @@
 package sending
 
 import (
-	"crypto/rand"
-	"math/big"
+	"fmt"
+	"os"
+	"strconv"
 )
 
-func GetNonce() int64 {
-	n, _ := rand.Int(rand.Reader, big.NewInt(128))
-	return n.Int64()
+func Log(num int, v any) {
+	val, ok := os.LookupEnv("DEBUG")
+	if ok {
+		debug, _ := strconv.ParseBool(val)
+		if debug {
+			fmt.Printf("[%d] %#v\n", num, v)
+		}
+	}
+	return
 }
