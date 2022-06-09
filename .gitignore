@@ -17,4 +17,8 @@ vendor/
 .idea/
 *.iml
 .vscode/
+.devcontainer
 oryxBuildBinary
+ca/
+*.txt
+main
