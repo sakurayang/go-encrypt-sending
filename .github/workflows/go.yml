@@ -34,5 +34,5 @@ jobs:
         go-version: 1.18
 
     - name: Build
-      run: GOOS=${{ matrix.name }} GOARCH=${{ matrix.arch }} go build -d dist/go-encrypt-sending main.go
+      run: GOOS=${{ matrix.name }} GOARCH=${{ matrix.arch }} go build -o dist/go-encrypt-sending-${{ matrix.name }}-${{ matrix.arch }} main.go
 
