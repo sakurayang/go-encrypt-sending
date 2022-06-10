@@ -37,5 +37,10 @@ jobs:
       run: |
         go env set GOOS ${{ matrix.name }}
         go env set GOARCH=${{ matrix.arch }}
+        go mod vendor
         go build -o dist/go-encrypt-sending-${{ matrix.name }}-${{ matrix.arch }} main.go
-
+    - name: Upload assets
+      uses: actions/upload-artifact@v3
+      with:
+        name: go-encrypt-sending-${{ matrix.name }}-${{ matrix.arch }}
+        path: dist/*
